@@ -6,3 +6,4 @@ app/demo.db*
 app/roundups/
 data/*.db-wal
 data/*.db-shm
+data/market.db

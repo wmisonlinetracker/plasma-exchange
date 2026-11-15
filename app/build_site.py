@@ -34,6 +34,7 @@ def main():
     ap.add_argument("--db", default=os.path.join(HERE, "market.db"))
     ap.add_argument("--out", default="site")
     ap.add_argument("--archive", default=None, help="folder to keep a copy of each day's roundup")
+    ap.add_argument("--encrypt", action="store_true", help="password-protect the site (DASHBOARD_PASSWORD env var)")
     a = ap.parse_args()
 
     cfg = load_cfg(a.config)
@@ -67,11 +68,29 @@ def main():
         w.writeheader()
         w.writerows(s["tickers"])
 
+    locked = False
+    if a.encrypt:
+        import vault
+        pw = vault.password_from_env()
+        bundle = {}
+        for root, _, files in os.walk(os.path.join(out, "data")):
+            for fn in files:
+                p = os.path.join(root, fn)
+                with open(p, encoding="utf-8") as f:
+                    bundle[os.path.relpath(p, out).replace(os.sep, "/")] = f.read()
+        bundle["roundup.html"] = html
+        shutil.rmtree(os.path.join(out, "data"))
+        os.remove(os.path.join(out, "roundup.html"))
+        with open(os.path.join(out, "vault.json"), "w") as f:
+            json.dump(vault.encrypt(json.dumps(bundle, separators=(",", ":")).encode(), pw), f)
+        locked = True
+
     with open(os.path.join(HERE, "web", "index.html"), encoding="utf-8") as f:
         page = f.read()
     repo = os.environ.get("GITHUB_REPOSITORY")
     actions = f"https://github.com/{repo}/actions" if repo else "#"
-    page = page.replace("<script>", f"<script>window.PX_STATIC=true;window.PX_ACTIONS_URL={json.dumps(actions)};</script>\n<script>", 1)
+    page = page.replace("<script>", f"<script>window.PX_STATIC=true;window.PX_LOCKED={json.dumps(locked)};"
+                        f"window.PX_ACTIONS_URL={json.dumps(actions)};</script>\n<script>", 1)
     page = page.replace("<head>", '<head>\n<meta name="robots" content="noindex,nofollow">', 1)
     with open(os.path.join(out, "index.html"), "w", encoding="utf-8") as f:
         f.write(page)

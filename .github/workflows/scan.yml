@@ -4,9 +4,6 @@ on:
   schedule:
     - cron: "17 */6 * * *"      # every 6 hours (UTC). For once a day use: "17 6 * * *"
   workflow_dispatch:             # adds a "Run workflow" button for an instant scan
-  push:
-    branches: [main]
-    paths: ["app/**", ".github/workflows/**"]
 
 permissions:
   contents: write                # save the price history back into the repository
@@ -31,23 +28,45 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install encryption library
+        run: pip install --quiet cryptography
+
+      - name: Check the dashboard password is set
+        env:
+          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
+        run: python -c "import sys; sys.path.insert(0,'app'); import vault; vault.password_from_env(); print('Password secret found')"
+
+      - name: Unlock price history
+        env:
+          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
+        run: |
+          mkdir -p data
+          if [ -f data/market.db.enc ]; then python app/vault.py unlock data/market.db.enc data/market.db; fi
+
       - name: Scan competitor prices
         env:
           EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
           EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
           EBAY_EXCLUDE_SELLERS: ${{ vars.EBAY_EXCLUDE_SELLERS }}
+        run: python app/market.py --db data/market.db scrape
+
+      - name: Build password-protected website
+        env:
+          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
+        run: python app/build_site.py --db data/market.db --out site --encrypt
+
+      - name: Lock price history
+        env:
+          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
         run: |
-          mkdir -p data
-          python app/market.py --db data/market.db scrape
+          python app/vault.py lock data/market.db data/market.db.enc
+          rm -f data/market.db data/market.db-wal data/market.db-shm
 
-      - name: Build website
-        run: python app/build_site.py --db data/market.db --out site --archive data/roundups
-
-      - name: Save price history
+      - name: Save price history (encrypted)
         run: |
           git config user.name "plasma-exchange-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data
+          git add data/market.db.enc
           git commit -m "Price scan $(date -u +'%Y-%m-%d %H:%M') UTC" || echo "No changes"
           git pull --rebase --autostash || true
           git push

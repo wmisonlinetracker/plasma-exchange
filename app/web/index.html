@@ -142,6 +142,15 @@ label.f input{display:block;width:100%;margin-top:4px;background:var(--bg);borde
 </main>
 <div id="feed"><div class="sect-h"><h2>Market tape — every competitor price move &amp; stock change</h2></div><table><tbody id="feedBody"></tbody></table></div>
 <div class="toast" id="toast"></div>
+<div id="login" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:50;align-items:center;justify-content:center">
+ <form id="loginForm" style="width:340px;background:var(--panel);border:1px solid var(--line2);border-radius:8px;padding:26px 26px 22px">
+  <div style="font:700 16px var(--mono);letter-spacing:.12em">PLASMA EXCHANGE</div>
+  <div class="muted" style="margin:4px 0 18px">Competitor price terminal · private</div>
+  <label class="f">Password<input id="pw" type="password" autocomplete="current-password" required></label>
+  <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin:6px 0 16px"><input type="checkbox" id="remember" checked> Keep me signed in on this computer</label>
+  <button class="btn primary" id="loginBtn" style="width:100%;padding:10px">Unlock dashboard</button>
+  <div id="loginErr" class="down" style="margin-top:10px;font-size:12px;min-height:16px"></div>
+ </form></div>
 <div id="setModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;align-items:center;justify-content:center">
  <div style="background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:20px 22px;width:560px;max-width:94vw;max-height:90vh;overflow:auto">
   <h2 style="margin:0 0 4px;font-size:16px">Settings</h2>
@@ -165,7 +174,11 @@ label.f input{display:block;width:100%;margin-top:4px;background:var(--bg);borde
 // Website mode (GitHub Pages): data comes from pre-built JSON files instead of the local server
 const STATIC=!!window.PX_STATIC;
 const safeKey=k=>String(k).replace(/[^A-Za-z0-9._-]/g,"_");
+let BUNDLE=null, KEY=null; const LOCKED=STATIC&&!!window.PX_LOCKED;
+function fromBundle(path){ const t=BUNDLE&&BUNDLE[path]; return Promise.resolve(t==null?new Response("{}",{status:404}):new Response(t)); }
 function api(p){ if(!STATIC) return fetch(p);
+  if(LOCKED){ if(p.startsWith("/api/product?key=")) return fromBundle("data/products/"+safeKey(decodeURIComponent(p.split("=")[1]))+".json");
+    return fromBundle({"/api/summary":"data/summary.json","/api/events":"data/events.json","/api/roundup":"data/roundup.json"}[p.split("?")[0]]); }
   if(p.startsWith("/api/product?key=")) return fetch("data/products/"+safeKey(decodeURIComponent(p.split("=")[1]))+".json?v="+Date.now());
   const map={"/api/summary":"data/summary.json","/api/events":"data/events.json","/api/roundup":"data/roundup.json"};
   return fetch(map[p.split("?")[0]]+"?v="+Date.now()); }
@@ -341,17 +354,43 @@ $("s_save").onclick=async()=>{const body={ebay_client_id:$("s_cid").value,ebay_c
   drop_alert_pct:$("s_drop").value,compatible_discount_vs_genuine_pct:$("s_disc").value,undercut_by:$("s_under").value,max_raise_pct:$("s_raise").value};
   const r=await (await fetch("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})).json();
   if(r.error) return toast(r.error); $("setModal").style.display="none"; toast("Settings saved."); load();};
+const b64d=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const b64e=b=>btoa(String.fromCharCode(...new Uint8Array(b)));
+async function deriveKey(pw,v){const base=await crypto.subtle.importKey("raw",new TextEncoder().encode(pw),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt:b64d(v.salt),iterations:v.iter,hash:"SHA-256"},base,{name:"AES-GCM",length:256},true,["decrypt"]);}
+async function fetchVault(){return (await fetch("vault.json?v="+Date.now(),{cache:"no-store"})).json();}
+async function openVault(v){const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64d(v.iv)},KEY,b64d(v.ct));BUNDLE=JSON.parse(new TextDecoder().decode(pt));}
+function blobOpen(text,type,name){const u=URL.createObjectURL(new Blob([text],{type}));if(name){const a=document.createElement("a");a.href=u;a.download=name;a.click();}else window.open(u,"_blank");}
+function store(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}
+function stored(k){try{return localStorage.getItem(k)}catch(e){return null}}
+$("loginForm").onsubmit=async e=>{e.preventDefault();$("loginErr").textContent="";$("loginBtn").textContent="Unlocking…";
+  try{const v=await fetchVault();KEY=await deriveKey($("pw").value,v);await openVault(v);
+    if($("remember").checked) store("px_key",b64e(await crypto.subtle.exportKey("raw",KEY))); else store("px_key",null);
+    $("login").style.display="none";$("pw").value="";await load();lastRun=S.last_run;}
+  catch(err){$("loginErr").textContent="Wrong password - please try again.";}
+  $("loginBtn").textContent="Unlock dashboard";};
 if(STATIC){ $("roundBtn").href="roundup.html"; $("expBtn").href="data/market.csv"; $("setBtn").style.display="none";
+  if(LOCKED){ $("roundBtn").onclick=e=>{e.preventDefault();blobOpen(BUNDLE["roundup.html"],"text/html")};
+    $("expBtn").onclick=e=>{e.preventDefault();blobOpen(BUNDLE["data/market.csv"],"text/csv","plasma-exchange.csv")};
+    $("setBtn").style.display="";$("setBtn").textContent="Log out";$("setBtn").onclick=()=>{store("px_key",null);location.reload()}; }
   $("scrapeBtn").textContent="Scan history"; $("scrapeBtn").onclick=()=>window.open(window.PX_ACTIONS_URL||"#","_blank");
   $("status").textContent="updates every 6h"; }
 let lastRun=null;
-async function pollStatus(){try{ if(STATIC){const s=await (await api("/api/summary")).json(); if(s.last_run!==lastRun){lastRun=s.last_run;load()} return;}
+async function pollStatus(){try{ if(STATIC){ if(LOCKED){ if(!KEY) return; await openVault(await fetchVault()); }
+    const s=await (await api("/api/summary")).json(); if(s.last_run!==lastRun){lastRun=s.last_run;load()} return;}
   const st=await (await fetch("/api/status")).json();
   const el=$("status"); if(st.running){el.className="pill run";el.textContent=(st.log.slice(-1)[0]||"Scanning…").slice(0,60);}
   else{el.className="pill";el.textContent="idle";}
   const s=await (await api("/api/summary")).json(); if(s.last_run!==lastRun){lastRun=s.last_run;load()}}catch(e){}}
-setInterval(pollStatus,8000);
-load().then(()=>{lastRun=S.last_run;pollStatus()});
+setInterval(pollStatus,STATIC?600000:8000);
+async function start(){
+  if(!LOCKED){ await load(); lastRun=S.last_run; pollStatus(); return; }
+  const saved=stored("px_key");
+  if(saved){ try{ KEY=await crypto.subtle.importKey("raw",b64d(saved),{name:"AES-GCM"},true,["decrypt"]); await openVault(await fetchVault());
+      await load(); lastRun=S.last_run; return; }catch(e){ store("px_key",null); KEY=null; } }
+  $("login").style.display="flex"; $("pw").focus();
+}
+start();
 </script>
 </body>
 </html>
