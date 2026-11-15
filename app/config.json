@@ -25,6 +25,9 @@
     "Specialised Welding Products": {
       "url": "https://specialisedwelding.co.uk", "platform": "shopify", "prices_include_vat": false, "grade": "compatible"
     },
+    "Weldmet": {
+      "url": "https://shop.weldmet.co.uk", "platform": "shopify", "prices_include_vat": true, "grade": "genuine"
+    },
     "Engweld": {
       "platform": "search", "grade": "genuine", "prices_include_vat": false,
       "search_url": "https://www.engweld.co.uk/search?q={part}",
