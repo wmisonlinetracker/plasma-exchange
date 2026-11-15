@@ -80,5 +80,12 @@ def connect(path):
         cols = [r[1] for r in con.execute(f"PRAGMA table_info({table})")]
         if col not in cols:
             con.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
+    # one-off data repairs
+    con.execute("CREATE TABLE IF NOT EXISTS migrations(name TEXT PRIMARY KEY, ts TEXT)")
+    done = {r[0] for r in con.execute("SELECT name FROM migrations")}
+    if "rapid_banner_price" not in done:
+        # Rapid Welding prices read from the '£500.00 ex VAT' delivery banner instead of the product (15 Nov 2026)
+        con.execute("DELETE FROM obs WHERE seller='Rapid Welding' AND raw_price=500.0")
+        con.execute("INSERT INTO migrations VALUES ('rapid_banner_price', ?)", (now_iso(),))
     con.commit()
     return con

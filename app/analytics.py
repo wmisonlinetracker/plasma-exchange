@@ -56,9 +56,19 @@ def _series(con, key=None, stale_hours=48):
     return out
 
 
+SUSPECT_LOW, SUSPECT_HIGH = 0.35, 3.0   # competitor price outside 35%..300% of yours = probably a misread
+
+
+def suspect(price, mine_price):
+    return bool(mine_price) and price is not None and not (SUSPECT_LOW * mine_price <= price <= SUSPECT_HIGH * mine_price)
+
+
 def _low(snap, me, grade=None):
-    """(cheapest unit price, seller, n in stock) among competitors, optionally of one grade."""
-    comp = [v for (s, g), v in snap.items() if s != me and (grade is None or g == grade)]
+    """(cheapest unit price, seller, n in stock) among competitors, optionally of one grade.
+    Prices wildly different from yours are ignored as probable misreads (shown flagged in 'Who sells it')."""
+    my = _mine(snap, me)
+    ref = my["price"] if my else None
+    comp = [v for (s, g), v in snap.items() if s != me and (grade is None or g == grade) and not suspect(v["price"], ref)]
     instock = [v for v in comp if v["stock"] != 0]
     pool = instock or comp
     if not pool:
@@ -236,7 +246,9 @@ def product_detail(con, cfg, key):
             "target": _benchmark(snap, me, g, disc)[0],
         }
     _, last_ts, last = s[-1]
-    book = sorted(last.values(), key=lambda x: (x["stock"] == 0, x["price"]))
+    my_now = _mine(last, me)
+    book = sorted(({**v, "suspect": v["seller"] != me and suspect(v["price"], my_now["price"] if my_now else None)}
+                   for v in last.values()), key=lambda x: (x["suspect"], x["stock"] == 0, x["price"]))
     listings = [dict(r) for r in con.execute(
         "SELECT seller,url,units,source,matched_on,grade,title FROM listings WHERE key=? ORDER BY seller", (key,))]
     return {"key": key, "product": prod, "grade": g, "daily": [days[d] for d in sorted(days)],
@@ -291,6 +303,8 @@ def roundup(con, cfg, hours=24):
             continue
         t = tick.get(e["key"], {})
         mine = t.get("mine")
+        if suspect(e["to"], mine) or suspect(e["from"], mine):
+            continue
         drops.append({**e, "your_unit": mine, "units": t.get("mine_units", 1),
                       "now_cheaper_than_you": mine is not None and e["to"] < mine,
                       "suggested_listing": t.get("suggested_listing"), "signal": t.get("signal"), "why": t.get("why")})

@@ -143,10 +143,12 @@ def run_scrape(con, cfg, log=print):
                 key = cand if cand and cand not in used else _product_key(r, r["_tokens"], used)
                 used.add(key)
             r["_key"] = key
-            grade = classify_grade(r["title"] + " " + r.get("body", ""), my_default_grade)
-            if re.search(r"\b(original|genuine)\b", r["title"] + " " + r.get("body", ""), re.I) and \
-                    not re.search(r"compatible", r["title"], re.I):
-                grade = "genuine"
+            text = r["title"] + " " + r.get("body", "") + " " + r.get("vendor", "")
+            if re.search(r"compatible|replacement|aftermarket|american torch tip|\bATTC?\b|\bPHD", text, re.I) and \
+                    not re.search(r"\b(original|genuine)\b", r["title"], re.I):
+                grade = "compatible"
+            else:
+                grade = my_default_grade
             prim = _primary_parts(r, r["_tokens"] or set(part_tokens(r["title"], r["sku"])), mcfg.get("match_on", "both"))
             r["_primary"] = prim
             part_of[key] = prim[0] if prim else None

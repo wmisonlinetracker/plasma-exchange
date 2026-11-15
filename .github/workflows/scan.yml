@@ -50,6 +50,10 @@ jobs:
           EBAY_EXCLUDE_SELLERS: ${{ vars.EBAY_EXCLUDE_SELLERS }}
         run: python app/market.py --db data/market.db scrape
 
+      - name: Self-test price readers
+        continue-on-error: true
+        run: python app/selftest.py
+
       - name: Build password-protected website
         env:
           DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}

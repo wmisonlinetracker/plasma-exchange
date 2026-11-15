@@ -3,14 +3,15 @@
 
   "sellers": {
     "PLASCOM": {
-      "url": "https://wmis.uk", "platform": "shopify", "prices_include_vat": true, "grade": "compatible"
+      "url": "https://wmis.uk", "platform": "shopify", "prices_include_vat": true, "grade": "genuine"
     },
 
     "Rapid Welding": {
       "platform": "template", "grade": "genuine", "prices_include_vat": false,
       "url_template": "https://www.rapidwelding.com/dynamic/DisplayItem.aspx?c={part}",
-      "price_regex": "£\\s*([\\d,]+\\.\\d{2})(?:\\s|<[^>]+>|&nbsp;)*EX\\s*VAT",
-      "parts_regex": "^\\d{6}$"
+      "price_regex": "£\\s*([\\d,]+\\.\\d{2})(?:(?!£).){0,200}?EX\\s*VAT(?:(?!£).){0,400}?Suggested Selling Price",
+      "parts_regex": "^\\d{6}$",
+      "selftest": {"059494": 1427.00, "220941": 6.96}
     },
     "H&F Welding Supplies": {
       "url": "https://www.hfweldingsupplies.co.uk", "platform": "shopify", "prices_include_vat": false, "grade": "genuine"

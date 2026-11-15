@@ -268,7 +268,7 @@ async function pick(key,keep){
    <div class="card"><h3>Who sells it right now — cheapest first (price per unit)</h3><table><tbody>${detail.book.map(b=>`<tr>
         <td class="l"><span class="dot" style="background:${b.seller===S.my_seller?'#f5b041':b.stock===0?'#55616f':'#2b3542'}"></span>${b.url?`<a href="${esc(b.url)}" target="_blank" rel="noopener" style="color:${b.seller===S.my_seller?'var(--amber)':'inherit'}">${esc(b.seller)}</a>`:esc(b.seller)}</td>
         <td class="l">${gradeBadge(b.grade)}</td>
-        <td class="num"><b>${money(b.price)}</b></td><td class="num muted">${b.units>1?money(b.raw)+" for "+b.units:""}</td>
+        <td class="num"><b style="${b.suspect?'text-decoration:line-through;color:var(--dim)':''}">${money(b.price)}</b>${b.suspect?'<div style="font-size:10px" class="amber" title="Very different from your price, so it is ignored in suggestions until checked">⚠ looks wrong, ignored</div>':''}</td><td class="num muted">${b.units>1?money(b.raw)+" for "+b.units:""}</td>
         <td class="muted">${b.stock===0?'<span class="down">out of stock</span>':b.stock===1?'in stock':''}</td></tr>`).join("")}</tbody></table></div>`;
   const avail=SERIES.filter(([k])=>detail.daily.some(d=>d[k]!=null));
   $("legend").innerHTML=avail.map(([k,lab,col,w,dash])=>`<span data-s="${k}" class="${hidden.has(k)?'off':''}"><i style="background:${col};${dash.length?'background:repeating-linear-gradient(90deg,'+col+' 0 5px,transparent 5px 9px)':''}"></i>${lab}</span>`).join("");
