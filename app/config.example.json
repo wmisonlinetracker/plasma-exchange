@@ -1,0 +1,45 @@
+{
+  "my_seller": "PLASCOM",
+
+  "sellers": {
+    "PLASCOM":      { "url": "https://wmis.uk",                 "platform": "shopify", "prices_include_vat": true },
+    "Competitor A": { "url": "https://www.competitor-a.co.uk",  "platform": "auto",    "prices_include_vat": true },
+    "Competitor B": { "url": "https://www.competitor-b.co.uk",  "platform": "auto",    "prices_include_vat": false },
+    "Competitor C": { "platform": "html", "prices_include_vat": true, "price_regex": null }
+  },
+
+  "compare_basis": "inc_vat",
+  "vat_rate": 0.20,
+  "currency_symbol": "£",
+
+  "signal_threshold_pct": 2.0,
+  "undercut_by": 0.05,
+
+  "costs_ex_vat": true,
+  "default_min_margin_pct": 20,
+  "costs": {
+    "220842": 21.50
+  },
+  "margins": {},
+
+  "only_brands": [],
+
+  "matching": {
+    "auto_match": true,
+    "match_on": "both",
+    "max_token_frequency": 3
+  },
+
+  "manual_listings": [
+    { "key": "220842", "seller": "Competitor C", "url": "https://www.competitor-c.co.uk/product/hypertherm-220842-electrode/", "units": 5 }
+  ],
+
+  "exclude_matches": [],
+  "units_override": [],
+
+  "fetch": {
+    "user_agent": null,
+    "delay_seconds": 2,
+    "respect_robots_txt": true
+  }
+}

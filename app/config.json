@@ -1,0 +1,78 @@
+{
+  "my_seller": "PLASCOM",
+
+  "sellers": {
+    "PLASCOM": {
+      "url": "https://wmis.uk", "platform": "shopify", "prices_include_vat": true, "grade": "compatible"
+    },
+
+    "Rapid Welding": {
+      "platform": "template", "grade": "genuine", "prices_include_vat": false,
+      "url_template": "https://www.rapidwelding.com/dynamic/DisplayItem.aspx?c={part}",
+      "price_regex": "£\\s*([\\d,]+\\.\\d{2})(?:\\s|<[^>]+>|&nbsp;)*EX\\s*VAT",
+      "parts_regex": "^\\d{6}$"
+    },
+    "H&F Welding Supplies": {
+      "url": "https://www.hfweldingsupplies.co.uk", "platform": "shopify", "prices_include_vat": false, "grade": "genuine"
+    },
+    "Brookside Welding Supplies": {
+      "url": "https://www.brooksideweldingsupplies.co.uk", "platform": "shopify", "prices_include_vat": false, "grade": "genuine"
+    },
+    "Basic Welding Supplies": {
+      "url": "https://www.basicwelding.co.uk", "platform": "shopify", "prices_include_vat": true, "grade": "genuine"
+    },
+    "Specialised Welding Products": {
+      "url": "https://specialisedwelding.co.uk", "platform": "shopify", "prices_include_vat": false, "grade": "compatible"
+    },
+    "Engweld": {
+      "platform": "search", "grade": "genuine", "prices_include_vat": false,
+      "search_url": "https://www.engweld.co.uk/search?q={part}",
+      "link_regex": "href=\"([^\"]*/product/{part}[^\"]*)\"",
+      "price_regex": "£\\s*([\\d,]+\\.\\d{2})\\s*ex\\.?\\s*VAT",
+      "parts_regex": "^\\d{6}$"
+    },
+    "Raptor Supplies (American Torch Tip)": {
+      "platform": "template", "grade": "compatible", "prices_include_vat": true,
+      "url_template": "https://www.raptorsupplies.co.uk/pd/american-torch-tip/{part_lower}",
+      "price_regex": "£\\s*([\\d,]+\\.\\d{2})\\s*/unit\\s*\\(Inc\\.\\s*VAT\\)",
+      "parts_regex": "^\\d{2}-\\d{4}$"
+    },
+    "Raptor Supplies (ATT for Hypertherm)": {
+      "platform": "template", "grade": "compatible", "prices_include_vat": true,
+      "url_template": "https://www.raptorsupplies.co.uk/pd/american-torch-tip/{part_lower}attc",
+      "price_regex": "£\\s*([\\d,]+\\.\\d{2})\\s*/unit\\s*\\(Inc\\.\\s*VAT\\)",
+      "parts_regex": "^\\d{6}$"
+    },
+    "eBay": {
+      "platform": "ebay_api", "prices_include_vat": true,
+      "client_id": "", "client_secret": "",
+      "exclude_sellers": [],
+      "include_postage": true,
+      "max_per_grade": 3
+    }
+  },
+
+  "compare_basis": "inc_vat",
+  "vat_rate": 0.20,
+  "currency_symbol": "£",
+
+  "signal_threshold_pct": 3.0,
+  "undercut_by": 0.05,
+  "compatible_discount_vs_genuine_pct": 35,
+  "drop_alert_pct": 10,
+  "max_raise_pct": 25,
+
+  "costs_ex_vat": true,
+  "default_min_margin_pct": 20,
+  "costs": {},
+  "margins": {},
+
+  "only_brands": [],
+  "matching": { "auto_match": true, "match_on": "both", "max_token_frequency": 3 },
+  "manual_listings": [],
+  "exclude_matches": [],
+  "units_override": [],
+  "skip_not_found_days": 7,
+
+  "fetch": { "user_agent": null, "delay_seconds": 2, "respect_robots_txt": true }
+}

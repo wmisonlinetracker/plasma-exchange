@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plasma Exchange</title>
+<style>
+:root{
+  --bg:#0b0e13; --panel:#11161d; --panel2:#151b23; --line:#222b36; --line2:#2b3542;
+  --text:#d6dde6; --muted:#8693a3; --dim:#55616f;
+  --up:#22c38e; --down:#f0565b; --amber:#f5b041; --blue:#4ea1ff; --grey:#94a3b8; --violet:#a78bfa;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 var(--sans)}
+a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.up{color:var(--up)} .down{color:var(--down)} .muted{color:var(--muted)} .amber{color:var(--amber)} .blue{color:var(--blue)}
+
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);background:#0d1117;flex-wrap:nowrap;overflow-x:auto}
+.brand{display:flex;flex-direction:column}
+.brand b{font:700 15px var(--mono);letter-spacing:.12em}
+.brand span{font-size:11px;color:var(--muted);max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat{display:flex;flex-direction:column;padding-left:14px;border-left:1px solid var(--line);white-space:nowrap}
+.stat label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.stat .v{font:600 18px var(--mono)}
+.chips{display:flex;gap:5px}
+.chip{font:600 11px var(--mono);padding:3px 8px;border-radius:3px;border:1px solid var(--line2);cursor:pointer;color:var(--muted);background:transparent}
+.chip.on{color:var(--text);border-color:var(--text)}
+.chip .n{margin-left:6px;color:var(--text)}
+.spacer{flex:1}
+.btn{font:600 12px var(--sans);background:var(--panel2);color:var(--text);border:1px solid var(--line2);padding:7px 12px;border-radius:4px;cursor:pointer;text-decoration:none!important;display:inline-block}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:#2a2111;border-color:var(--amber);color:var(--amber)}
+.pill{font:11px var(--mono);padding:3px 8px;border-radius:10px;background:#18202a;color:var(--muted)}
+.pill.run{background:#11261d;color:var(--up)}
+.pill.run::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--up);margin-right:6px;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.2}}
+
+.tape{overflow:hidden;white-space:nowrap;border-bottom:1px solid var(--line);background:#0a0d11;height:28px;position:relative}
+.tape-inner{display:inline-block;padding-left:100%;animation:scroll 120s linear infinite;line-height:28px}
+.tape:hover .tape-inner{animation-play-state:paused}
+.tape-item{display:inline-block;margin-right:28px;font:12px var(--mono);cursor:pointer}
+.tape-item b{color:var(--text);margin-right:6px}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+
+#actions{border-bottom:1px solid var(--line);background:#120f0a}
+#actions .head{display:flex;align-items:center;gap:12px;padding:8px 18px;cursor:pointer}
+#actions h2{margin:0;font:700 12px var(--sans);text-transform:uppercase;letter-spacing:.1em;color:var(--amber)}
+#actions .list{max-height:170px;overflow:auto;padding:0 18px 8px}
+#actions table td{padding:5px 8px;border-bottom:1px solid #251d10;font-size:12px}
+#actions.closed .list{display:none}
+
+main{display:grid;grid-template-columns:minmax(600px,1.15fr) 1fr;gap:1px;background:var(--line);height:calc(100vh - 160px - 170px);min-height:560px}
+section{background:var(--panel);overflow:auto;position:relative}
+.sect-h{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
+.sect-h h2{margin:0;font:600 11px var(--sans);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+input.search{background:var(--bg);border:1px solid var(--line2);color:var(--text);padding:5px 8px;border-radius:3px;font:12px var(--mono);width:190px}
+
+table{width:100%;border-collapse:collapse}
+th{font:600 10px var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);position:sticky;top:41px;background:var(--panel);cursor:pointer;white-space:nowrap;user-select:none}
+th:first-child,td:first-child,th.l,td.l{text-align:left}
+td{padding:6px 8px;border-bottom:1px solid #18202a;text-align:right;white-space:nowrap}
+tbody tr{cursor:pointer}
+#wl tbody tr:hover{background:var(--panel2)}
+#wl tbody tr.sel{background:#1a2330;box-shadow:inset 2px 0 0 var(--amber)}
+td.sym b{font:600 12px var(--mono)}
+td.sym div{font-size:11px;color:var(--muted);max-width:210px;overflow:hidden;text-overflow:ellipsis}
+.sig{font:700 10px var(--mono);padding:2px 6px;border-radius:2px;letter-spacing:.04em}
+.sig.OVERPRICED{background:rgba(240,86,91,.15);color:var(--down)}
+.sig.HEADROOM{background:rgba(78,161,255,.15);color:var(--blue)}
+.sig.COMPETITIVE{background:rgba(34,195,142,.15);color:var(--up)}
+.sig.OTHER{background:rgba(148,163,184,.12);color:var(--grey)}
+.grade{font:600 10px var(--sans);padding:1px 6px;border-radius:8px;border:1px solid var(--line2);color:var(--muted);white-space:nowrap}
+.grade.genuine{color:var(--blue);border-color:#24456b}
+.grade.compatible{color:var(--up);border-color:#1d4d3c}
+.grade.budget{color:var(--grey)}
+
+.detail{padding:14px 16px}
+.d-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.d-head h1{margin:0;font:700 22px var(--mono)}
+.d-head .nm{color:var(--muted)}
+.kpis{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:1px;background:var(--line);margin:12px 0;border:1px solid var(--line)}
+.kpi{background:var(--panel2);padding:10px 12px}
+.kpi label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.kpi .v{font:700 20px var(--mono)}
+.kpi .s{font-size:11px;color:var(--muted)}
+.kpi.sugg{background:#1a1609}
+.bands{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.band{border:1px solid var(--line);padding:7px 10px;background:var(--panel2)}
+.band label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.band .v{font:600 15px var(--mono)}
+.chart-wrap{position:relative;border:1px solid var(--line);background:#0c1016}
+canvas{display:block;width:100%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;margin:8px 0}
+.legend span{cursor:pointer;user-select:none}
+.legend span.off{opacity:.35;text-decoration:line-through}
+.legend i{display:inline-block;width:16px;height:3px;margin-right:6px;vertical-align:middle;border-radius:2px}
+.tip{position:absolute;pointer-events:none;background:rgba(13,17,23,.97);border:1px solid var(--line2);padding:8px 10px;font:12px var(--mono);border-radius:4px;display:none;z-index:5;min-width:190px}
+.tip div{display:flex;justify-content:space-between;gap:14px}
+.card{border:1px solid var(--line);background:var(--panel2);margin-top:14px}
+.card h3{margin:0;padding:7px 10px;border-bottom:1px solid var(--line);font:600 10px var(--sans);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.card td{padding:6px 10px}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}
+.note{font-size:11px;color:var(--muted);margin-top:6px}
+
+#feed{height:170px;background:var(--panel);border-top:1px solid var(--line);overflow:auto}
+#feed table td{font:12px var(--mono);padding:4px 12px}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.toast{position:fixed;bottom:16px;right:16px;background:var(--panel2);border:1px solid var(--line2);padding:10px 14px;border-radius:4px;display:none;max-width:420px}
+label.f{display:block;font-size:12px;color:var(--muted);margin-bottom:8px}
+label.f input{display:block;width:100%;margin-top:4px;background:var(--bg);border:1px solid var(--line2);color:var(--text);padding:7px 9px;border-radius:4px;font:13px var(--mono)}
+@media (max-width:1100px){main{grid-template-columns:1fr;height:auto}.kpis{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>PLASMA EXCHANGE</b><span id="sub">Competitor price terminal</span></div>
+  <div class="stat"><label title="Average % your prices sit above (+) or below (−) the market benchmark">Price index ⓘ</label>
+    <div style="display:flex;align-items:center;gap:8px"><span class="v" id="idx">–</span><canvas id="spark" width="110" height="26" style="width:110px;height:26px"></canvas></div></div>
+  <div class="stat"><label>Parts tracked</label><span class="v" id="ntrack">–</span></div>
+  <div class="stat"><label>Signals</label><div class="chips" id="chips"></div></div>
+  <div class="spacer"></div>
+  <div class="stat"><label>Last scan</label><span class="num" id="last">–</span><span id="status" class="pill" style="margin-top:3px"></span></div>
+  <button class="btn" id="scrapeBtn">Scan now</button>
+  <a class="btn primary" id="roundBtn" href="/roundup" target="_blank">Daily roundup</a>
+  <a class="btn" id="expBtn" href="/api/export.csv">Export</a>
+  <button class="btn" id="setBtn">Settings</button>
+</header>
+<div class="tape"><div class="tape-inner" id="tape"></div></div>
+<div id="actions"><div class="head" id="actHead"><h2>⚡ Action list — sharp competitor price cuts (last 24h)</h2><span class="pill" id="actCount">0</span><span class="spacer"></span><span class="muted" id="actHint">click to hide</span></div><div class="list" id="actList"></div></div>
+<main>
+  <section>
+    <div class="sect-h"><h2>Watchlist</h2><div class="spacer"></div><input class="search" id="q" placeholder="Search part or name"></div>
+    <table id="wl"><thead><tr>
+      <th data-k="key" class="l">Part</th><th data-k="mine_listing">Your price</th><th data-k="low" title="Per unit: cheapest like-for-like competitor, or genuine price minus your discount if none">Market / unit</th>
+      <th data-k="spread">vs market</th><th data-k="d7">Market 7D</th><th data-k="suggested_listing">Suggested price</th><th data-k="signal" class="l">Signal</th>
+    </tr></thead><tbody></tbody></table>
+  </section>
+  <section><div class="detail" id="detail"><div class="empty">Select a part</div></div></section>
+</main>
+<div id="feed"><div class="sect-h"><h2>Market tape — every competitor price move &amp; stock change</h2></div><table><tbody id="feedBody"></tbody></table></div>
+<div class="toast" id="toast"></div>
+<div id="setModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:20;align-items:center;justify-content:center">
+ <div style="background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:20px 22px;width:560px;max-width:94vw;max-height:90vh;overflow:auto">
+  <h2 style="margin:0 0 4px;font-size:16px">Settings</h2>
+  <p class="muted" style="margin:0 0 14px">Changes are saved straight away and used from the next scan.</p>
+  <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--amber);margin:14px 0 6px">eBay prices</h3>
+  <p class="muted" style="margin:0 0 8px;font-size:12px">eBay only allows price checking through its free official access. Get your two keys at <a href="https://developer.ebay.com/my/keys" target="_blank" rel="noopener">developer.ebay.com/my/keys</a> (sign in with your eBay account, create a <b>Production</b> keyset) and paste them here.</p>
+  <label class="f">App ID (Client ID)<input id="s_cid" placeholder="e.g. PLASCOM-Plasma-PRD-..."></label>
+  <label class="f">Cert ID (Client Secret)<input id="s_sec" type="password" placeholder="leave blank to keep the saved one"></label>
+  <label class="f">Your own eBay usernames to ignore (comma separated)<input id="s_exc" placeholder="e.g. plascom_uk"></label>
+  <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--amber);margin:16px 0 6px">Pricing rules</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+   <label class="f">Alert me when a competitor cuts by at least (%)<input id="s_drop" type="number" step="1"></label>
+   <label class="f">Price compatible parts below genuine by (%)<input id="s_disc" type="number" step="1"></label>
+   <label class="f">Undercut the cheapest competitor by (£)<input id="s_under" type="number" step="0.01"></label>
+   <label class="f">Largest price rise in one step (%)<input id="s_raise" type="number" step="1"></label>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px"><button class="btn" id="s_cancel">Cancel</button><button class="btn primary" id="s_save">Save</button></div>
+ </div></div>
+
+<script>
+// Website mode (GitHub Pages): data comes from pre-built JSON files instead of the local server
+const STATIC=!!window.PX_STATIC;
+const safeKey=k=>String(k).replace(/[^A-Za-z0-9._-]/g,"_");
+function api(p){ if(!STATIC) return fetch(p);
+  if(p.startsWith("/api/product?key=")) return fetch("data/products/"+safeKey(decodeURIComponent(p.split("=")[1]))+".json?v="+Date.now());
+  const map={"/api/summary":"data/summary.json","/api/events":"data/events.json","/api/roundup":"data/roundup.json"};
+  return fetch(map[p.split("?")[0]]+"?v="+Date.now()); }
+let S=null, sel=null, sortK=null, sortDir=1, filt=null, detail=null, hidden=new Set(["compatible"]);
+const $=id=>document.getElementById(id);
+const cur=()=>S?S.currency:"£";
+const money=(v)=>v==null?"–":cur()+Number(v).toFixed(2);
+const signed=(v)=>v==null?"–":(v>0?"+":v<0?"−":"")+cur()+Math.abs(v).toFixed(2);
+const pct=(v,invert)=>v==null?"<span class='muted'>–</span>":`<span class="${(invert?-v:v)>0?'up':(invert?-v:v)<0?'down':'muted'}">${v>0?'+':''}${v.toFixed(1)}%</span>`;
+const sigClass=s=>s.startsWith("OVERPRICED")?"OVERPRICED":s==="HEADROOM"?"HEADROOM":s==="COMPETITIVE"?"COMPETITIVE":"OTHER";
+const fmtT=t=>{const d=new Date(t);return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+" "+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})};
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const gradeBadge=g=>`<span class="grade ${g}">${g==="genuine"?"Genuine":g==="compatible"?"Compatible":"Budget"}</span>`;
+const SERIES=[["you","Your price","#f5b041",3,[]],["like","Cheapest like-for-like","#22c38e",2,[]],["genuine","Cheapest genuine","#4ea1ff",2,[]],["compatible","Cheapest compatible","#a78bfa",1.5,[]],["budget","Cheapest budget / unbranded","#94a3b8",1.5,[5,4]]];
+
+async function load(){
+  S=await (await api("/api/summary")).json();
+  $("sub").textContent=`${S.my_seller} · per-unit prices ${S.basis==="inc_vat"?"inc":"ex"} VAT`; $("sub").title=`Signal band ±${S.threshold}%`;
+  $("idx").innerHTML=S.index==null?"–":`<span class="${S.index>0?'down':'up'}">${S.index>0?'+':''}${S.index.toFixed(1)}%</span>`;
+  $("ntrack").textContent=S.tickers.length;
+  $("last").textContent=S.last_run?fmtT(S.last_run):"never";
+  spark();
+  const c=S.counts;
+  $("chips").innerHTML=[["OVERPRICED","down","Too dear"],["HEADROOM","blue","Room to raise"],["COMPETITIVE","up","On target"],["NO MATCH YET","muted","No match"]].map(([k,cl,lab])=>
+    `<button class="chip ${filt===k?'on':''}" data-f="${k}">${lab}<span class="n ${cl}">${c[k]||0}</span></button>`).join("");
+  document.querySelectorAll(".chip[data-f]").forEach(b=>b.onclick=()=>{filt=filt===b.dataset.f?null:b.dataset.f;load()});
+  $("tape").innerHTML=S.tickers.filter(t=>t.low!=null).map(t=>
+    `<span class="tape-item" data-k="${esc(t.key)}"><b>${esc(t.key)}</b>${money(t.low)} ${t.d1==null||t.d1===0?"":`<span class="${t.d1>0?'up':'down'}">${t.d1>0?'▲':'▼'} ${Math.abs(t.d1).toFixed(1)}%</span>`}</span>`).join("");
+  document.querySelectorAll(".tape-item").forEach(e=>e.onclick=()=>pick(e.dataset.k));
+  table(); feed(); actions();
+  if(!sel && S.tickers.length) pick(S.tickers[0].key); else if(sel) pick(sel,true);
+}
+
+function spark(){
+  const cv=$("spark"),h=S.index_history||[],ctx=cv.getContext("2d"),dpr=devicePixelRatio||1;
+  cv.width=110*dpr;cv.height=26*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,110,26);
+  if(h.length<2)return;const vs=h.map(x=>x.v),mn=Math.min(...vs,0),mx=Math.max(...vs,0);
+  const y=v=>24-(v-mn)/((mx-mn)||1)*22;
+  ctx.strokeStyle="#2b3542";ctx.beginPath();ctx.moveTo(0,y(0));ctx.lineTo(110,y(0));ctx.stroke();
+  ctx.strokeStyle=vs[vs.length-1]>0?"#f0565b":"#22c38e";ctx.lineWidth=1.5;ctx.beginPath();
+  vs.forEach((v,i)=>{const x=i/(vs.length-1)*108+1;i?ctx.lineTo(x,y(v)):ctx.moveTo(x,y(v))});ctx.stroke();
+}
+
+function table(){
+  const q=$("q").value.toLowerCase();
+  let rows=S.tickers.filter(t=>(!filt||t.signal.startsWith(filt))&&(!q||(t.key+" "+t.name+" "+t.brand).toLowerCase().includes(q)));
+  if(sortK) rows.sort((a,b)=>{const x=a[sortK],y=b[sortK];if(x==null)return 1;if(y==null)return -1;return (x>y?1:x<y?-1:0)*sortDir});
+  document.querySelector("#wl tbody").innerHTML=rows.map(t=>{
+    const sp=t.spread, spc=sp==null?'muted':sp>S.threshold?'down':sp<-S.threshold?'blue':'up';
+    return `<tr data-k="${esc(t.key)}" class="${t.key===sel?'sel':''}">
+    <td class="sym"><b>${esc(t.key)}</b> ${gradeBadge(t.grade)}<div title="${esc(t.name)}">${esc(t.name)}</div></td>
+    <td class="num">${money(t.mine_listing)}${t.mine_units>1?`<div class="muted" style="font-size:10px">${t.mine_units}-pack</div>`:""}</td>
+    <td class="num">${money(t.low)}</td>
+    <td class="num"><span class="${spc}">${sp==null?"–":(sp>0?"+":"")+sp.toFixed(1)+"%"}</span></td>
+    <td class="num">${pct(t.d7)}</td>
+    <td class="num">${t.suggested_listing==null?'<span class="muted">–</span>':`<b class="amber">${money(t.suggested_listing)}</b><div style="font-size:10px" class="${t.change>0?'up':'down'}">${signed(t.change)}</div>`}</td>
+    <td class="l"><span class="sig ${sigClass(t.signal)}">${esc(t.signal.replace(" · AT FLOOR","*"))}</span></td></tr>`}).join("")||`<tr><td colspan=7 class="empty">No parts match</td></tr>`;
+  document.querySelectorAll("#wl tbody tr[data-k]").forEach(r=>r.onclick=()=>pick(r.dataset.k));
+}
+document.querySelectorAll("#wl th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;sortDir=sortK===k?-sortDir:(k==="key"||k==="signal"?1:-1);sortK=k;table()});
+$("q").oninput=table;
+
+async function pick(key,keep){
+  sel=key;
+  document.querySelectorAll("#wl tbody tr").forEach(r=>r.classList.toggle("sel",r.dataset.k===key));
+  const t=S.tickers.find(x=>x.key===key); if(!t) return;
+  detail=await (await api("/api/product?key="+encodeURIComponent(key))).json();
+  const units=t.mine_units||1;
+  const basisLab=t.basis==="genuine"?`Genuine −${Math.round((1-(t.low/(t.genuine_low||t.low)))*100)}%`:t.basis?"Cheapest like-for-like":"–";
+  $("detail").innerHTML=`
+   <div class="d-head"><h1>${esc(key)}</h1>${gradeBadge(t.grade)}<span class="nm">${esc(t.name)}</span>
+     <span class="sig ${sigClass(t.signal)}">${esc(t.signal)}</span>${t.url?`<a href="${esc(t.url)}" target="_blank" rel="noopener">your listing ↗</a>`:""}</div>
+   <div class="kpis">
+     <div class="kpi"><label>Your price</label><div class="v amber">${money(t.mine_listing)}</div><div class="s">${units>1?`${units}-pack · ${money(t.mine)} each`:"single"}</div></div>
+     <div class="kpi"><label>Market benchmark</label><div class="v">${money(t.low!=null?t.low*units:null)}</div><div class="s">${basisLab}${t.low_seller?" · "+esc(t.low_seller):""}</div></div>
+     <div class="kpi sugg"><label>Suggested selling price</label><div class="v amber">${t.suggested_listing==null?(t.signal==="COMPETITIVE"?"Keep "+money(t.mine_listing):"–"):money(t.suggested_listing)}
+        ${t.change!=null?`<span style="font-size:13px" class="${t.change>0?'up':'down'}">${signed(t.change)}</span>`:""}</div><div class="s">${esc(t.why)}</div></div>
+   </div>
+   <div class="bands">
+     <div class="band"><label><span class="dot" style="background:#4ea1ff"></span>Cheapest genuine</label><div class="v">${money(t.genuine_low)} <span class="muted" style="font-size:11px">/unit</span></div></div>
+     <div class="band"><label><span class="dot" style="background:#a78bfa"></span>Cheapest branded compatible</label><div class="v">${money(t.compatible_low)} <span class="muted" style="font-size:11px">/unit</span></div></div>
+     <div class="band"><label><span class="dot" style="background:#94a3b8"></span>Cheapest budget / unbranded</label><div class="v">${money(t.budget_low)} <span class="muted" style="font-size:11px">/unit</span></div></div>
+   </div>
+   <div class="legend" id="legend"></div>
+   <div class="chart-wrap"><canvas id="chart" height="280"></canvas><div class="tip" id="tip"></div></div>
+   <div class="note" id="chartNote"></div>
+   <div class="card"><h3>Who sells it right now — cheapest first (price per unit)</h3><table><tbody>${detail.book.map(b=>`<tr>
+        <td class="l"><span class="dot" style="background:${b.seller===S.my_seller?'#f5b041':b.stock===0?'#55616f':'#2b3542'}"></span>${b.url?`<a href="${esc(b.url)}" target="_blank" rel="noopener" style="color:${b.seller===S.my_seller?'var(--amber)':'inherit'}">${esc(b.seller)}</a>`:esc(b.seller)}</td>
+        <td class="l">${gradeBadge(b.grade)}</td>
+        <td class="num"><b>${money(b.price)}</b></td><td class="num muted">${b.units>1?money(b.raw)+" for "+b.units:""}</td>
+        <td class="muted">${b.stock===0?'<span class="down">out of stock</span>':b.stock===1?'in stock':''}</td></tr>`).join("")}</tbody></table></div>`;
+  const avail=SERIES.filter(([k])=>detail.daily.some(d=>d[k]!=null));
+  $("legend").innerHTML=avail.map(([k,lab,col,w,dash])=>`<span data-s="${k}" class="${hidden.has(k)?'off':''}"><i style="background:${col};${dash.length?'background:repeating-linear-gradient(90deg,'+col+' 0 5px,transparent 5px 9px)':''}"></i>${lab}</span>`).join("");
+  document.querySelectorAll("#legend span").forEach(e=>e.onclick=()=>{const s=e.dataset.s;hidden.has(s)?hidden.delete(s):hidden.add(s);e.classList.toggle("off");draw()});
+  draw();
+}
+
+function draw(crossI){
+  const cv=$("chart"); if(!cv||!detail) return;
+  const dpr=devicePixelRatio||1, W=cv.clientWidth, H=280; cv.width=W*dpr; cv.height=H*dpr; cv.style.height=H+"px";
+  const ctx=cv.getContext("2d"); ctx.scale(dpr,dpr); ctx.clearRect(0,0,W,H);
+  const days=detail.daily.slice(-90), n=days.length;
+  const lines=SERIES.filter(([k])=>!hidden.has(k)&&days.some(d=>d[k]!=null));
+  const vals=lines.flatMap(([k])=>days.map(d=>d[k]).filter(v=>v!=null));
+  $("chartNote").textContent=n<2?"History builds up from here: each daily scan adds a point, so trends appear after a few days.":`Last ${n} days · one point per day · price per unit`;
+  if(!vals.length){ctx.fillStyle="#8693a3";ctx.font="13px sans-serif";ctx.fillText("No prices to show yet",20,30);return}
+  let lo=Math.min(...vals), hi=Math.max(...vals); const pad=(hi-lo)*0.12||hi*0.15||1; lo=Math.max(0,lo-pad); hi+=pad;
+  const L=10,R=64,T=14,B=30;
+  const X=i=>n<2?(L+(W-L-R)/2):L+i/(n-1)*(W-L-R), Y=v=>T+(hi-v)/(hi-lo)*(H-T-B);
+  ctx.font="11px ui-monospace,Menlo,monospace";
+  const step=niceStep((hi-lo)/5), lastD0=days[n-1];
+  const tagYs=["you","like"].filter(k=>!hidden.has(k)&&lastD0[k]!=null).map(k=>Y(lastD0[k]));
+  for(let v=Math.ceil(lo/step)*step; v<=hi; v+=step){const y=Y(v);ctx.strokeStyle="#1a222c";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(W-R,y);ctx.stroke();
+    if(tagYs.some(t=>Math.abs(t-y)<14)) continue;
+    ctx.fillStyle="#8693a3";ctx.textBaseline="middle";ctx.fillText(cur()+v.toFixed(step<1?2:0),W-R+8,y);}
+  ctx.textBaseline="top"; const every=Math.max(1,Math.ceil(n/8));
+  days.forEach((d,i)=>{if(i%every===0||i===n-1){ctx.fillStyle="#8693a3";const lab=new Date(d.d+"T12:00:00Z").toLocaleDateString('en-GB',{day:'2-digit',month:'short'});ctx.fillText(lab,Math.min(W-R-40,Math.max(L,X(i)-18)),H-20);}});
+  for(const [k,lab,col,w,dash] of lines){
+    ctx.strokeStyle=col;ctx.lineWidth=w;ctx.setLineDash(dash);ctx.beginPath();let started=false;
+    days.forEach((d,i)=>{if(d[k]==null){started=false;return}const x=X(i),y=Y(d[k]);started?ctx.lineTo(x,y):ctx.moveTo(x,y);started=true});
+    ctx.stroke();ctx.setLineDash([]);
+    days.forEach((d,i)=>{if(d[k]==null)return;if(n<15||i===n-1){ctx.fillStyle=col;ctx.beginPath();ctx.arc(X(i),Y(d[k]),k==="you"?4:3,0,7);ctx.fill();}});
+  }
+  // right-edge labels for you + like-for-like
+  const lastD=days[n-1];
+  for(const [k,,col] of lines.filter(([k])=>k==="you"||k==="like")){ if(lastD[k]==null) continue; const y=Y(lastD[k]);
+    ctx.fillStyle=col;ctx.fillRect(W-R+2,y-8,R-4,16);ctx.fillStyle="#0b0e13";ctx.textBaseline="middle";ctx.fillText(cur()+lastD[k].toFixed(2),W-R+6,y);}
+  if(crossI!=null){const x=X(crossI);ctx.strokeStyle="#55616f";ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,H-B);ctx.stroke();ctx.setLineDash([]);}
+  cv.onmousemove=e=>{const r=cv.getBoundingClientRect(),mx=e.clientX-r.left;
+    const i=n<2?0:Math.max(0,Math.min(n-1,Math.round((mx-L)/(W-L-R)*(n-1))));const d=days[i];
+    const tip=$("tip");tip.innerHTML=`<div class="muted">${new Date(d.d+"T12:00:00Z").toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short'})}</div>`+
+      lines.filter(([k])=>d[k]!=null).map(([k,lab,col])=>`<div><span><span class="dot" style="background:${col}"></span>${lab}</span><b>${money(d[k])}</b></div>`).join("");
+    tip.style.display="block";const x=X(i);tip.style.left=(x+16+260>W?x-270:x+16)+"px";tip.style.top="10px";
+    if(i!==crossI) requestAnimationFrame(()=>draw(i));};
+  cv.onmouseleave=()=>{$("tip").style.display="none";draw()};
+}
+function niceStep(raw){const p=Math.pow(10,Math.floor(Math.log10(raw||1))),q=raw/p;return (q<1.5?1:q<3?2:q<7?5:10)*p}
+window.addEventListener("resize",()=>draw());
+
+async function actions(){
+  const r=await (await api("/api/roundup")).json();
+  $("actCount").textContent=r.drops.length+" cut"+(r.drops.length===1?"":"s");
+  $("actCount").className="pill"+(r.drops.length?" run":"");
+  $("actList").innerHTML=r.drops.length?`<table><tbody>${r.drops.slice(0,30).map(d=>`<tr data-k="${esc(d.key)}" style="cursor:pointer">
+     <td class="l"><b class="num">${esc(d.key)}</b> <span class="muted">${esc(d.name).slice(0,46)}</span></td>
+     <td class="l">${esc(d.seller)} ${gradeBadge(d.grade)}</td>
+     <td class="num">${money(d.from)} → <b>${money(d.to)}</b> <span class="down">${d.pct.toFixed(1)}%</span></td>
+     <td class="l">${d.now_cheaper_than_you?'<b class="down">now cheaper than you</b>':'<span class="muted">still above you</span>'}</td>
+     <td class="num">${d.suggested_listing!=null?'suggest <b class="amber">'+money(d.suggested_listing)+'</b>':''}</td></tr>`).join("")}</tbody></table>`
+    :`<div class="muted" style="padding:6px 0">No competitor has cut a price by ${r.drop_pct}% or more in the last 24 hours. The full daily roundup (dearer-than-market and room-to-raise lists) is under <b>Daily roundup</b>.</div>`;
+  document.querySelectorAll("#actList tr[data-k]").forEach(e=>e.onclick=()=>pick(e.dataset.k));
+}
+$("actHead").onclick=()=>{$("actions").classList.toggle("closed");$("actHint").textContent=$("actions").classList.contains("closed")?"click to show":"click to hide"};
+
+async function feed(){
+  const ev=await (await api("/api/events?limit=150")).json();
+  $("feedBody").innerHTML=ev.map(e=>`<tr data-k="${esc(e.key)}" style="cursor:pointer">
+    <td class="l muted">${fmtT(e.ts)}</td><td class="l"><b>${esc(e.key)}</b></td><td class="l">${esc(e.seller)}</td><td class="l">${gradeBadge(e.grade)}</td>
+    <td class="l">${e.kind==="price"?`${money(e.from)} → ${money(e.to)}`:`<span class="${e.kind==='in stock'?'up':'down'}">${e.kind.toUpperCase()}</span>`}</td>
+    <td class="l">${e.kind==="price"?pct(e.pct):""}</td><td class="l muted" style="max-width:420px;overflow:hidden;text-overflow:ellipsis">${esc(e.name)}</td></tr>`).join("")||`<tr><td class="empty">Price moves appear here from the second scan onwards.</td></tr>`;
+  document.querySelectorAll("#feedBody tr[data-k]").forEach(r=>r.onclick=()=>pick(r.dataset.k));
+}
+
+function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display="none",5000)}
+$("scrapeBtn").onclick=async()=>{const r=await fetch("/api/scrape",{method:"POST"});const j=await r.json();
+  if(j.error) return toast(j.error); toast("Scan started. The first full scan takes a while (it politely waits between requests); the board updates when it finishes.");pollStatus();};
+$("setBtn").onclick=async()=>{const s=await (await fetch("/api/settings")).json();
+  $("s_cid").value=s.ebay_client_id||"";$("s_sec").value="";$("s_sec").placeholder=s.ebay_has_secret?"saved - leave blank to keep":"paste your Cert ID";
+  $("s_exc").value=s.ebay_exclude||"";$("s_drop").value=s.drop_alert_pct;$("s_disc").value=s.compatible_discount_vs_genuine_pct;
+  $("s_under").value=s.undercut_by;$("s_raise").value=s.max_raise_pct;$("setModal").style.display="flex";};
+$("s_cancel").onclick=()=>$("setModal").style.display="none";
+$("s_save").onclick=async()=>{const body={ebay_client_id:$("s_cid").value,ebay_client_secret:$("s_sec").value,ebay_exclude:$("s_exc").value,
+  drop_alert_pct:$("s_drop").value,compatible_discount_vs_genuine_pct:$("s_disc").value,undercut_by:$("s_under").value,max_raise_pct:$("s_raise").value};
+  const r=await (await fetch("/api/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})).json();
+  if(r.error) return toast(r.error); $("setModal").style.display="none"; toast("Settings saved."); load();};
+if(STATIC){ $("roundBtn").href="roundup.html"; $("expBtn").href="data/market.csv"; $("setBtn").style.display="none";
+  $("scrapeBtn").textContent="Scan history"; $("scrapeBtn").onclick=()=>window.open(window.PX_ACTIONS_URL||"#","_blank");
+  $("status").textContent="updates every 6h"; }
+let lastRun=null;
+async function pollStatus(){try{ if(STATIC){const s=await (await api("/api/summary")).json(); if(s.last_run!==lastRun){lastRun=s.last_run;load()} return;}
+  const st=await (await fetch("/api/status")).json();
+  const el=$("status"); if(st.running){el.className="pill run";el.textContent=(st.log.slice(-1)[0]||"Scanning…").slice(0,60);}
+  else{el.className="pill";el.textContent="idle";}
+  const s=await (await api("/api/summary")).json(); if(s.last_run!==lastRun){lastRun=s.last_run;load()}}catch(e){}}
+setInterval(pollStatus,8000);
+load().then(()=>{lastRun=S.last_run;pollStatus()});
+</script>
+</body>
+</html>

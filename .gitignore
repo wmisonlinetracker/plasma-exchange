@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+site/
+app/market.db*
+app/demo.db*
+app/roundups/
+data/*.db-wal
+data/*.db-shm
